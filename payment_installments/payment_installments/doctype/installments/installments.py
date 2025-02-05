@@ -9,9 +9,7 @@ from frappe.model.document import Document
 
 class Installments(Document):
     def validate(self):
-        if self.due_date < utils.today():
-            frappe.throw("Due Date must be today or later")
-
+        pass
 
 @frappe.whitelist()
 def new_installment(customer: str, due_date: datetime.date, sales_person: str):
