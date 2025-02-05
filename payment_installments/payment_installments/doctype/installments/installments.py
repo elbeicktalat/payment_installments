@@ -16,11 +16,14 @@ def new_installment(customer: str, due_date: datetime.date, sales_person: str):
     try:
         amount: int = 0
         customer = frappe.get_doc("Customer", customer)
-        customer_sales_invoice_count = frappe.db.count(
-            "Sales Invoice", {"customer": customer.name}
+        current_balance = frappe.call(
+            "erpnext.accounts.utils.get_balance_on",
+            date=frappe.utils.today(),
+            party_type="Customer",
+            party=customer.name,
         )
 
-        if customer_sales_invoice_count > 0:
+        if current_balance > 0:
             sales_invoice = frappe.get_last_doc(
                 "Sales Invoice", filters={"customer": customer.name}
             )
@@ -32,13 +35,6 @@ def new_installment(customer: str, due_date: datetime.date, sales_person: str):
                         / 500
                     )
                     * 500
-            )
-
-            current_balance = frappe.call(
-                "erpnext.accounts.utils.get_balance_on",
-                date=frappe.utils.today(),
-                party_type="Customer",
-                party=customer.name,
             )
 
             if rata > customer.minimum_installment_amount:
