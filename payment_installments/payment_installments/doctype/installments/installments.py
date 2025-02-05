@@ -41,8 +41,10 @@ def new_installment(customer: str, due_date: datetime.date, sales_person: str):
                 party=customer,
             )
 
-            if rata > 500:
+            if rata > customer.minimum_installment_amount:
                 amount = rata
+            elif customer.minimum_installment_amount < current_balance:
+                amount = customer.minimum_installment_amount
             else:
                 amount = current_balance
 
