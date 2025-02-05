@@ -38,7 +38,7 @@ def new_installment(customer: str, due_date: datetime.date, sales_person: str):
                 "erpnext.accounts.utils.get_balance_on",
                 date=frappe.utils.today(),
                 party_type="Customer",
-                party=customer,
+                party=customer.name,
             )
 
             if rata > customer.minimum_installment_amount:
