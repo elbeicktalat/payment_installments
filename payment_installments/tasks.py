@@ -22,7 +22,7 @@ def update_installments_status():
     )
 
     for installment in installments:
-        if installment.due_date < date.today():
+        if date.today() > getdate(installment.due_date):
             frappe.db.set_value(
                 "Installments",
                 installment.name,
