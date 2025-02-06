@@ -11,12 +11,13 @@
   "customer",
   "customer_name_in_arabic",
   "contact_person",
-  "amount",
+  "customer_address",
   "column_break_vavt",
   "amended_from",
   "due_date",
-  "sales_person",
+  "amount",
   "paid_amount",
+  "sales_person",
   "section_break_acqf",
   "payment_entry",
   "coordinates",
@@ -114,7 +115,7 @@
   {
    "fieldname": "sales_person",
    "fieldtype": "Link",
-   "label": "Receiver",
+   "label": "Sales Person",
    "options": "Sales Person",
    "reqd": 1
   },
@@ -138,12 +139,20 @@
    "fieldname": "next_installment",
    "fieldtype": "Date",
    "label": "Next Installment"
+  },
+  {
+   "fetch_from": "customer.customer_primary_address",
+   "fieldname": "customer_address",
+   "fieldtype": "Link",
+   "label": "Address",
+   "options": "Address",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-02-06 03:53:28.231971",
+ "modified": "2025-02-06 23:25:36.715756",
  "modified_by": "Administrator",
  "module": "Payment Installments",
  "name": "Installments",

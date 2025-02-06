@@ -11,8 +11,12 @@ class Installments(Document):
     def validate(self):
         pass
 
+
 @frappe.whitelist()
-def new_installment(customer: str, due_date: datetime.date, next_installment: datetime.date, sales_person: str):
+def new_installment(
+        customer: str, due_date: datetime.date, next_installment: datetime.date, sales_person: str,
+        customer_address: str
+):
     try:
         amount: int = 0
         customer = frappe.get_doc("Customer", customer)
@@ -51,6 +55,7 @@ def new_installment(customer: str, due_date: datetime.date, next_installment: da
                     "due_date": due_date,
                     "next_installment": next_installment,
                     "sales_person": sales_person,
+                    "customer_address": customer_address,
                     "amount": amount,
                 }
             )

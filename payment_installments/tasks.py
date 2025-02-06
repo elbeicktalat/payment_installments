@@ -32,11 +32,11 @@ def update_installments_status():
 
 
 @frappe.whitelist()
-def create_payment_installments():
+def create_payment_installments(auto=1):
     progress = 0
     customers = frappe.get_all(
         "Customer",
-        fields=["name", "payment_day", "installments_frequency"],
+        fields=["name", "payment_day", "installments_frequency", "customer_primary_address"],
         filters=[
             ["disabled", "=", 0],
             ["installments_count", ">", 0],
@@ -49,33 +49,46 @@ def create_payment_installments():
         return
 
     for customer in customers:
-        installments_count = frappe.db.count("Installments", filters=[["customer", "=", customer.name]])
+        installments_count = frappe.db.count(
+            "Installments",
+            filters=[
+                ["customer", "=", customer.name],
+                ["docstatus", "!=", 2]
+            ]
+        )
         frappe.log(f"installments_count {installments_count}")
 
-        if installments_count > 1:
+        if installments_count > 0:
             last_installment = frappe.get_last_doc(
                 "Installments",
                 filters=[
                     ["customer", "=", customer.name],
-                    ["status", "!=", "Cancelled"]
+                    ["docstatus", "!=", 2]
                 ]
             )
             if getdate(last_installment.next_installment) == getdate(frappe.utils.today()):
-                frappe.log('Auto')
                 new_installment_call(
-                    customer=customer, progress=progress, customers_len=len(customers),
-                    next_installment=last_installment.next_installment
+                    customer=customer,
+                    progress=progress,
+                    customers_len=len(customers),
+                    next_installment=last_installment.next_installment,
+                    customer_address=customer.customer_primary_address
                 )
                 return
+        else:
+            if auto == 1:
+                return
 
-        frappe.log('Manual')
-        new_installment_call(
-            customer=customer, progress=progress, customers_len=len(customers),
-            next_installment=None
-        )
+            new_installment_call(
+                customer=customer,
+                progress=progress,
+                customers_len=len(customers),
+                next_installment=None,
+                customer_address=customer.customer_primary_address
+            )
 
 
-def new_installment_call(customer, progress: int, customers_len: int, next_installment):
+def new_installment_call(customer, progress: int, customers_len: int, next_installment, customer_address: str):
     due_date = date_for_weekday(week_days[customer.payment_day])
     sales_team = frappe.db.sql(
         f"""
@@ -101,6 +114,7 @@ def new_installment_call(customer, progress: int, customers_len: int, next_insta
                 )
             ),
             sales_person=default_sales_team[0],
+            customer_address=customer_address
         )
         progress += 1 * 100 / customers_len
         frappe.publish_progress(progress, "Creating New Installments", description=customer.name)
