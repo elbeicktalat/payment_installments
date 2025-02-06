@@ -165,11 +165,11 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-    "weekly": [
-        "payment_installments.tasks.create_payment_installments",
-    ],
     "daily": [
         "payment_installments.tasks.update_installments_status",
+    ],
+    "weekly": [
+        "payment_installments.tasks.create_payment_installments",
     ],
 }
 

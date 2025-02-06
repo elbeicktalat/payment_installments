@@ -4,10 +4,10 @@
   "doctype": "Client Script",
   "dt": "Installments",
   "enabled": 1,
-  "modified": "2025-02-05 02:49:53.592922",
+  "modified": "2025-02-06 03:36:57.070921",
   "module": "Payment Installments",
   "name": "Create Installments Button",
-  "script": "function ButtonFunction(listview) {\r\n    frappe.call('payment_installments.tasks.create_payment_installments');\r\n}\r\n\r\nfrappe.listview_settings['Installments'] = {\r\n    refresh: function (listview) {\r\n        listview.page.add_inner_button(\"Create Installments\", function () {\r\n            ButtonFunction(listview);\r\n        });\r\n    },\r\n};",
+  "script": "function ButtonFunction(listview) {\r\n    frappe.call('payment_installments.task.create_payment_installments');\r\n    listview.refresh();\r\n}\r\n\r\nfrappe.listview_settings['Installments'] = {\r\n    refresh: function (listview) {\r\n        listview.page.add_inner_button(\"Create Installments\", function () {\r\n            ButtonFunction(listview);\r\n        });\r\n    },\r\n};",
   "view": "List"
  }
 ]

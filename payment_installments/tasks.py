@@ -1,5 +1,17 @@
 import frappe
+from frappe.utils import getdate
 from datetime import date, timedelta
+
+week_days = {
+    "Monday": 0,
+    "Tuesday": 1,
+    "Wednesday": 2,
+    "Thursday": 3,
+    "Friday": 4,
+    "Saturday": 5,
+    "Sunday": 6,
+}
+
 
 @frappe.whitelist()
 def update_installments_status():
@@ -22,10 +34,9 @@ def update_installments_status():
 @frappe.whitelist()
 def create_payment_installments():
     progress = 0
-    frappe.publish_progress(progress, "Creating New Installments")
     customers = frappe.get_all(
         "Customer",
-        fields=["name", "payment_day"],
+        fields=["name", "payment_day", "installments_frequency"],
         filters=[
             ["disabled", "=", 0],
             ["installments_count", ">", 0],
@@ -37,43 +48,66 @@ def create_payment_installments():
         frappe.msgprint("No customers to create installments for")
         return
 
-    days = {
-        "Monday": 0,
-        "Tuesday": 1,
-        "Wednesday": 2,
-        "Thursday": 3,
-        "Friday": 4,
-        "Saturday": 5,
-        "Sunday": 6,
-    }
-
     for customer in customers:
-        sales_team = frappe.db.sql(
-            f"""
-        select
-	        sales_person
-	    from
-	        `tabSales Team`
-	    where
-		    parent = '{customer.name}'
-        """
+        installments_count = frappe.db.count("Installments", filters=[["customer", "=", customer.name]])
+        frappe.log(f"installments_count {installments_count}")
+
+        if installments_count > 1:
+            last_installment = frappe.get_last_doc(
+                "Installments",
+                filters=[
+                    ["customer", "=", customer.name],
+                    ["status", "!=", "Cancelled"]
+                ]
+            )
+            if getdate(last_installment.next_installment) == getdate(frappe.utils.today()):
+                frappe.log('Auto')
+                new_installment_call(
+                    customer=customer, progress=progress, customers_len=len(customers),
+                    next_installment=last_installment.next_installment
+                )
+                return
+
+        frappe.log('Manual')
+        new_installment_call(
+            customer=customer, progress=progress, customers_len=len(customers),
+            next_installment=None
         )
 
-        if len(sales_team) > 0:
-            default_sales_team = sales_team[0]
-            frappe.call(
-                "payment_installments.payment_installments.doctype.installments.installments.new_installment",
-                customer=customer.name,
-                due_date=date_for_weekday(days[customer.payment_day]),
-                sales_person=default_sales_team[0],
-            )
-            progress += 1 * 100 / len(customers)
-            frappe.publish_progress(progress, "Creating New Installments")
-        else:
-            frappe.msgprint(
-                f"Customer {customer.name} does not have a sales team or payment day"
-            )
-    frappe.msgprint("Installments Created Successfully")
+
+def new_installment_call(customer, progress: int, customers_len: int, next_installment):
+    due_date = date_for_weekday(week_days[customer.payment_day])
+    sales_team = frappe.db.sql(
+        f"""
+            select
+    	        sales_person
+    	    from
+    	        `tabSales Team`
+    	    where
+    		    parent = '{customer.name}'
+            """
+    )
+
+    if len(sales_team) > 0:
+        default_sales_team = sales_team[0]
+        frappe.call(
+            "payment_installments.payment_installments.doctype.installments.installments.new_installment",
+            customer=customer.name,
+            due_date=due_date,
+            next_installment=frappe.utils.getdate(
+                frappe.utils.add_days(
+                    next_installment if next_installment else due_date,
+                    customer.installments_frequency
+                )
+            ),
+            sales_person=default_sales_team[0],
+        )
+        progress += 1 * 100 / customers_len
+        frappe.publish_progress(progress, "Creating New Installments", description=customer.name)
+    else:
+        frappe.msgprint(
+            f"Customer {customer.name} does not have a sales team or payment day"
+        )
 
 
 def date_for_weekday(day: int):
