@@ -3,13 +3,18 @@
 
 import frappe
 import datetime
+from datetime import date
 from frappe import utils
 from frappe.model.document import Document
 
 
 class Installments(Document):
     def validate(self):
-        pass
+        customer = frappe.get_doc("Customer", self.customer)
+        self.next_installment = frappe.utils.add_days(self.due_date, customer.installments_frequency)
+
+        if date.today() > frappe.utils.getdate(self.due_date):
+            self.status = "Overdue"
 
 
 @frappe.whitelist()
@@ -18,7 +23,6 @@ def new_installment(
         customer_address: str
 ):
     try:
-        amount: int = 0
         customer = frappe.get_doc("Customer", customer)
         current_balance = frappe.call(
             "erpnext.accounts.utils.get_balance_on",
@@ -27,42 +31,43 @@ def new_installment(
             party=customer.name,
         )
 
-        if current_balance > 0:
-            last_sales_invoice = frappe.get_last_doc(
-                "Sales Invoice", filters={"customer": customer.name}
-            )
+        if current_balance <= 0: return
 
-            rata = (
-                    round(
-                        (last_sales_invoice.customer_balance + last_sales_invoice.grand_total)
-                        / customer.installments_count
-                        / 500
-                    )
-                    * 500
-            )
+        last_sales_invoice = frappe.get_last_doc(
+            "Sales Invoice", filters={"customer": customer.name}
+        )
 
-            if rata > customer.minimum_installment_amount:
-                amount = rata
-            elif customer.minimum_installment_amount < current_balance:
-                amount = customer.minimum_installment_amount
-            else:
-                amount = current_balance
+        rata = (
+                round(
+                    (last_sales_invoice.customer_balance + last_sales_invoice.grand_total)
+                    / customer.installments_count
+                    / 500
+                )
+                * 500
+        )
 
-            doc = frappe.get_doc(
-                {
-                    "doctype": "Installments",
-                    "customer": customer.name,
-                    "due_date": due_date,
-                    "next_installment": next_installment,
-                    "sales_person": sales_person,
-                    "customer_address": customer_address,
-                    "amount": amount,
-                }
-            )
-            doc.insert()
-            doc.submit()
+        if rata > customer.minimum_installment_amount:
+            amount = rata
+        elif customer.minimum_installment_amount < current_balance:
+            amount = customer.minimum_installment_amount
+        else:
+            amount = current_balance
 
-            return doc
+        doc = frappe.get_doc(
+            {
+                "doctype": "Installments",
+                "customer": customer.name,
+                "due_date": due_date,
+                "next_installment": next_installment,
+                "sales_person": sales_person,
+                "customer_address": customer_address,
+                "amount": amount,
+            }
+        )
+        doc.insert()
+        doc.submit()
+
+        return doc
     except Exception as e:
         frappe.log_error(frappe.get_traceback(), f"{e}")
         frappe.local.response["http_status_code"] = 500

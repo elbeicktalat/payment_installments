@@ -33,7 +33,6 @@ def update_installments_status():
 
 @frappe.whitelist()
 def create_payment_installments(auto=1):
-    progress = 0
     customers = frappe.get_all(
         "Customer",
         fields=["name", "payment_day", "installments_frequency", "customer_primary_address"],
@@ -49,6 +48,13 @@ def create_payment_installments(auto=1):
         return
 
     for customer in customers:
+        current_balance = frappe.call(
+            "erpnext.accounts.utils.get_balance_on",
+            date=frappe.utils.today(),
+            party_type="Customer",
+            party=customer.name,
+        )
+
         installments_count = frappe.db.count(
             "Installments",
             filters=[
@@ -56,7 +62,8 @@ def create_payment_installments(auto=1):
                 ["docstatus", "!=", 2]
             ]
         )
-        frappe.log(f"installments_count {installments_count}")
+
+        if current_balance <= 0: return
 
         if installments_count > 0:
             last_installment = frappe.get_last_doc(
@@ -69,7 +76,6 @@ def create_payment_installments(auto=1):
             if getdate(last_installment.next_installment) == getdate(frappe.utils.today()):
                 new_installment_call(
                     customer=customer,
-                    progress=progress,
                     customers_len=len(customers),
                     next_installment=last_installment.next_installment,
                     customer_address=customer.customer_primary_address
@@ -81,14 +87,16 @@ def create_payment_installments(auto=1):
 
             new_installment_call(
                 customer=customer,
-                progress=progress,
                 customers_len=len(customers),
                 next_installment=None,
                 customer_address=customer.customer_primary_address
             )
 
 
-def new_installment_call(customer, progress: int, customers_len: int, next_installment, customer_address: str):
+def new_installment_call(customer, customers_len: int, next_installment, customer_address: str):
+    progress = 0
+    frappe.publish_progress(progress, "Creating New Installments", description=customer.name)
+
     due_date = date_for_weekday(week_days[customer.payment_day])
     sales_team = frappe.db.sql(
         f"""
@@ -101,27 +109,28 @@ def new_installment_call(customer, progress: int, customers_len: int, next_insta
             """
     )
 
-    if len(sales_team) > 0:
-        default_sales_team = sales_team[0]
-        frappe.call(
-            "payment_installments.payment_installments.doctype.installments.installments.new_installment",
-            customer=customer.name,
-            due_date=due_date,
-            next_installment=frappe.utils.getdate(
-                frappe.utils.add_days(
-                    next_installment if next_installment else due_date,
-                    customer.installments_frequency
-                )
-            ),
-            sales_person=default_sales_team[0],
-            customer_address=customer_address
-        )
-        progress += 1 * 100 / customers_len
-        frappe.publish_progress(progress, "Creating New Installments", description=customer.name)
-    else:
+    if len(sales_team) < 1:
         frappe.msgprint(
-            f"Customer {customer.name} does not have a sales team or payment day"
+            f"Customer {customer.name} does not have a sales team"
         )
+        return
+
+    default_sales_team = sales_team[0]
+    frappe.call(
+        "payment_installments.payment_installments.doctype.installments.installments.new_installment",
+        customer=customer.name,
+        due_date=due_date,
+        next_installment=frappe.utils.getdate(
+            frappe.utils.add_days(
+                next_installment if next_installment else due_date,
+                customer.installments_frequency
+            )
+        ),
+        sales_person=default_sales_team[0],
+        customer_address=customer_address
+    )
+    progress += 1 * 100 / customers_len
+    frappe.publish_progress(progress, "Creating New Installments", description=customer.name)
 
 
 def date_for_weekday(day: int):
