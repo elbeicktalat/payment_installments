@@ -31,7 +31,8 @@ def new_installment(
             party=customer.name,
         )
 
-        if current_balance <= 0: return
+        if current_balance <= 0:
+            return
 
         last_sales_invoice = frappe.get_last_doc(
             "Sales Invoice", filters={"customer": customer.name}

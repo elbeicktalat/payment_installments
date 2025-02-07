@@ -63,7 +63,8 @@ def create_payment_installments(auto=1):
             ]
         )
 
-        if current_balance <= 0: return
+        if current_balance <= 0:
+            return
 
         if installments_count > 0:
             last_installment = frappe.get_last_doc(
