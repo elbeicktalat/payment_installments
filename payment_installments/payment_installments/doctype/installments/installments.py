@@ -28,13 +28,13 @@ def new_installment(
         )
 
         if current_balance > 0:
-            sales_invoice = frappe.get_last_doc(
+            last_sales_invoice = frappe.get_last_doc(
                 "Sales Invoice", filters={"customer": customer.name}
             )
 
             rata = (
                     round(
-                        (sales_invoice.customer_balance + sales_invoice.grand_total)
+                        (last_sales_invoice.customer_balance + last_sales_invoice.grand_total)
                         / customer.installments_count
                         / 500
                     )

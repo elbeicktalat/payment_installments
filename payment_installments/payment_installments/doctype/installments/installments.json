@@ -6,6 +6,8 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "summary_section",
+  "summary_html",
   "section_break_q1me",
   "status",
   "customer",
@@ -82,9 +84,11 @@
    "fieldtype": "Section Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "coordinates",
    "fieldtype": "Data",
    "label": "Coordinates",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -92,9 +96,11 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "validation_datetime",
    "fieldtype": "Datetime",
    "label": "Validation Date/Time",
+   "no_copy": 1,
    "read_only": 1
   },
   {
@@ -102,7 +108,8 @@
    "fieldname": "paid_amount",
    "fieldtype": "Currency",
    "label": "Paid Ammount",
-   "no_copy": 1
+   "no_copy": 1,
+   "read_only": 1
   },
   {
    "fetch_from": "customer.customer_primary_contact",
@@ -124,6 +131,7 @@
    "fieldname": "payment_entry",
    "fieldtype": "Link",
    "label": "Payment Entry",
+   "no_copy": 1,
    "options": "Payment Entry",
    "read_only": 1
   },
@@ -138,7 +146,9 @@
    "allow_on_submit": 1,
    "fieldname": "next_installment",
    "fieldtype": "Date",
-   "label": "Next Installment"
+   "label": "Next Installment",
+   "no_copy": 1,
+   "read_only": 1
   },
   {
    "fetch_from": "customer.customer_primary_address",
@@ -147,12 +157,22 @@
    "label": "Address",
    "options": "Address",
    "read_only": 1
+  },
+  {
+   "fieldname": "summary_html",
+   "fieldtype": "HTML",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "summary_section",
+   "fieldtype": "Section Break",
+   "label": "Summary"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-02-06 23:25:36.715756",
+ "modified": "2025-02-07 05:01:28.119478",
  "modified_by": "Administrator",
  "module": "Payment Installments",
  "name": "Installments",
