@@ -120,8 +120,11 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "sales_person",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Sales Person",
    "options": "Sales Person",
    "reqd": 1
@@ -170,9 +173,10 @@
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_calendar_and_gantt": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-02-07 05:01:28.119478",
+ "modified": "2025-02-07 22:57:48.243853",
  "modified_by": "Administrator",
  "module": "Payment Installments",
  "name": "Installments",
@@ -222,6 +226,7 @@
    "title": "Not Paid"
   }
  ],
+ "title_field": "customer",
  "track_changes": 1,
  "track_seen": 1,
  "track_views": 1
